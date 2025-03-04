@@ -13,7 +13,7 @@ const userQuery=`
 )`
 connect.query(userQuery,(error,result)=>{
     if(error) return console.log("Error Occured in creating "+process.env.USER_TABLE+" table :"+error);
-  console.log(process.env.USER_TABLE + "User table is ready")
+  console.log(process.env.USER_TABLE + " table is ready")
   
 })
 module.exports=connect

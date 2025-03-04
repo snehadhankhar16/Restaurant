@@ -13,15 +13,15 @@ connect.connect((error)=>{
     console.log("Connected to mysql");
 })
    //database creation
-const dbQuery=`CREATE DATABASE IF NOT EXISTS restaurant ${process.env.DATABASE}`
+const dbQuery=`CREATE DATABASE IF NOT EXISTS ${process.env.DATABASE}`
 connect.query(dbQuery,(error)=>{
     if(error) return console.log("Error Occured in Creating Database:"+error)
-    console.log(process.env.DATABASE + "Database Created Sucessfully");
+    console.log(process.env.DATABASE + " Database Created Sucessfully");
 })
    //select database
 connect.changeUser({database:process.env.DATABASE},(error)=>{
     if(error) console.log("Error Occured in selecting database:"+ error);
-    console.log( process.env.DATABASE+"Database selected");
+    console.log( process.env.DATABASE+" Database selected");
 })   
 return connect   
 }
