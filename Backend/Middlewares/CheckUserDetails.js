@@ -6,7 +6,7 @@ const User=require("../Tables/UserTable")
 const checkUserDetails=async(req,resp,next)=>{
    const token=req.header("Authorization")
    if(!token) return handleResponse(resp,404,"Token is not found")
-   const payload=jwt.verify(token,process.env.JSON_KEY)
+   const payload=jwt.verify(token,process.env.JWT_KEY)
    if(!payload || !payload.id) return handleResponse(resp,401,"Token is not valid")
    const Query=`Select * from ${process.env.USER_TABLE} where id=${payload.id}`
    User.query(Query,(error,results)=>{
@@ -21,7 +21,7 @@ const checkUserDetails=async(req,resp,next)=>{
 const checkSuperAdminDetails=async(req,resp,next)=>{
     const token=req.header("Authorization")
     if(!token) return handleResponse(resp,404,"Token is not found")
-    const payload=jwt.verify(token,process.env.JSON_KEY)
+    const payload=jwt.verify(token,process.env.JWT_KEY)
     if(!payload || !payload.id) return handleResponse(resp,401,"Token is not valid")
     const Query=`Select * from ${process.env.USER_TABLE} where id=${payload.id}`
     User.query(Query,(error,results)=>{
