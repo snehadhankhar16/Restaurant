@@ -30,7 +30,7 @@ const storage = multer.diskStorage({  //this create a folder
 const upload=multer({storage:storage})
 const deleteImage=(path)=>{
     fs.unlink(path,(error)=>{
-        console.log("Error Occured in deleting the image:"+error);        
+        if(error) console.log("Error occured in deleting the image:"+error)
     })
 }
 
@@ -184,7 +184,96 @@ Routes.get('/getAllItem/:category',checkUserDetails,(req, resp) => {
         });
     })
 });
+Routes.delete('/deleteItem/:id',checkUserDetails,(req,resp)=>{
+    const {id} =req.params
+    if(isNaN(id)) return handleResponse(resp,404,"Invalid Menu id")
+    
+    Menu.query('SELECT image FROM menu_items WHERE id= ?',[id],(error,results)=>{
+        if(error) return handleError(resp,error)
+        if (results.length===0)return handleResponse(resp,400,"Menu not found in list")  
+
+        if(results[0] && results[0].image){
+            deleteImage(results[0].image)
+            const query=`DELETE FROM menu_items WHERE id= ?`
+            Menu.query(query,[id],(error,result)=>{
+                if (error) return handleError(resp,error)
+            })
+            return handleResponse(resp,202,"Menu deleted successfully")
+        }
+    })    
+})
+Routes.put('/updateItem/:id', checkUserDetails,(req,resp)=>{
+    const{id}=req.params
+    const{ itemname,price,category,description }= req.body
+    
+    if(isNaN(id)){
+        return handleResponse(resp,404,"invalid menu id")
+    }
+    
+    if (!itemname || !price || !category) {
+        return handleResponse(resp,404,"All fields except images are required")
+    }
+     const checkQuery=  `SELECT id FROM categories WHERE name=? `;
+     Category.query(checkQuery,[category],(error,results)=>{
+        if(error) return handleError(resp,error)
+        if(results.length===0) return handleResponse(resp,404,"This category doesn't exist")
+
+        const categoryID=results[0].id //updated category id 
 
 
+        Menu.query(`SELECT * FROM ${process.env.MENU_TABLE} WHERE id = ?`, [id], (error, responses) => { 
+            if (error)  return handleError(resp,error)
+                if (responses.length === 0) return handleResponse(resp,404,"Menu not found in the list")
+
+                const query = `UPDATE ${process.env.MENU_TABLE} SET itemname = ?, price = ?, category_id = ?, description = ? WHERE id = ?`;
+                Menu.query(query, [itemname, price, categoryID, description, id], (error, result) => {
+                    if (error)  return handleError(resp,error)
+                    return handleResponse(resp,202,"Menu updated successfully!")
+                })
+            })
+        })
+})
+Routes.put("/updateItemImage/:id",checkUserDetails,upload.single('image'),(req,resp)=>{   //update the image
+    const { id } = req.params;
+
+    if (isNaN(id)) {
+        if (req.file) deleteImage(req?.file?.path)  // image delete bcz id format wrong to error
+        return handleResponse(resp,400,"Invalid Menu id")
+    }
+
+    if (!req.file) {
+        return handleResponse(resp,400,"No image is uploaded yet ..!")
+    }
+
+
+    const newImagePath = `./uploads/${req.file.filename}`;
+   
+    Menu.query(`SELECT image FROM ${process.env.MENU_TABLE} WHERE id = ?`, [id], (error, results) => { //database m vo menu item available h b ya ni check
+            if (error) {
+                deleteImage(newImagePath)  //img upload hogi hogi already
+                return handleError(resp,error)
+            }
+
+            if (results.length === 0) {
+                deleteImage(newImagePath)  //obj khali h to delete krnge
+                return handleResponse(resp,404,"Menu not found in the list")
+            }
+
+            const oldImagePath = results[0]?.image;
+
+            const query = `UPDATE ${process.env.MENU_TABLE} SET image = ? WHERE id = ?`;
+            Menu.query(query, [newImagePath,id], (error, result) => {
+                if (error) {
+                    deleteImage(newImagePath)
+                    return handleError(resp,error)
+                }
+
+                if (oldImagePath && oldImagePath !== newImagePath) {
+                    deleteImage(oldImagePath)
+                }
+                return handleResponse(resp,202,'Menu item image updated successfully');
+        });
+    });
+})
 
 module.exports = Routes    
